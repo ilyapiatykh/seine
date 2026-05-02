@@ -1,0 +1,99 @@
+// Control-plane API for seine.
+//
+// The management server is a stateful registry of agent runtime data:
+// public keys, currently-advertised endpoints, last-seen timestamps. The
+// network specification (groups, ACLs, hub mesh) lives in Git, not here;
+// agents and the server pull it independently. This API exists only to
+// exchange runtime data that cannot be expressed declaratively.
+syntax = "proto3";
+
+package seine.controlplane.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ilyapiatykh/seine/api/proto/seine/controlplane/v1;cpv1";
+
+service ControlPlane {
+  // Register is called once per agent process. The agent presents a
+  // bootstrap token issued by the operator, its WireGuard public key and
+  // (if it is a hub) the endpoint it listens on. The server validates the
+  // bootstrap token, persists the registration and returns a long-lived
+  // auth token used in subsequent calls.
+  //
+  // Re-registration with the same name overwrites the public key — this
+  // is the recovery path when an agent loses its keypair.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Heartbeat is called periodically (every 30s by default). It updates
+  // the agent's runtime state and returns the registry of all currently
+  // known peers so the agent can reconcile its WireGuard interface.
+  // Authenticated via bearer token in metadata.
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message RegisterRequest {
+  // Name as declared in the network spec (must match exactly).
+  string name = 1;
+
+  // Operator-issued bootstrap token. The server compares it against its
+  // own configured value.
+  string bootstrap_token = 2;
+
+  // WireGuard public key (base64, 32 bytes decoded).
+  string public_key = 3;
+
+  // Endpoint the peer listens on, in host:port form. Hubs always set
+  // this; spokes typically leave it empty (they connect outbound only).
+  string endpoint = 4;
+
+  // Build version of the agent — surfaced in diagnostics.
+  string agent_version = 5;
+}
+
+message RegisterResponse {
+  // Bearer token to present in subsequent calls.
+  string auth_token = 1;
+}
+
+message HeartbeatRequest {
+  // Current advertised endpoint. Empty means "unchanged" — the server
+  // keeps the previously-registered value.
+  string endpoint = 1;
+}
+
+message HeartbeatResponse {
+  // Latest commit SHA of the spec the server has observed. The agent
+  // uses this as a hint to prioritise its next Git pull.
+  string spec_commit = 1;
+
+  // All currently-registered peers, including the caller. The agent
+  // filters this list locally based on the spec and its role.
+  repeated PeerInfo peers = 2;
+}
+
+message PeerInfo {
+  // Name as declared in the spec.
+  string name = 1;
+
+  // WireGuard public key (base64).
+  string public_key = 2;
+
+  // Currently advertised endpoint (host:port). May be empty for spokes.
+  string endpoint = 3;
+
+  // Tunnel IP from the spec, included as a convenience so the agent
+  // does not have to cross-reference itself.
+  string tunnel_ip = 4;
+
+  // Last successful heartbeat, used by the agent to skip stale peers.
+  google.protobuf.Timestamp last_seen = 5;
+
+  // Role of this peer (hub or spoke), copied from the spec.
+  Role role = 6;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_HUB = 1;
+  ROLE_SPOKE = 2;
+}

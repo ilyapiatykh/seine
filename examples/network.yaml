@@ -1,0 +1,62 @@
+# Reference network specification for seine.
+#
+# Operators commit a file like this to the Git repository that the
+# management server (and agents) pull from. The schema mirrors a Kubernetes
+# resource: an envelope (apiVersion/kind/metadata) wrapping a typed spec.
+apiVersion: seine.io/v1
+kind: Network
+metadata:
+  name: corp-overlay
+  description: Demo overlay
+
+spec:
+  cidr: 100.64.0.0/10
+
+  wireguard:
+    mtu: 1420
+    persistentKeepalive: 25s
+    hubListenPort: 51820
+
+  # Hubs run on Linux with a publicly reachable endpoint and IP forwarding.
+  # They are connected in a full mesh; agents reach each other through the
+  # hub assigned to them.
+  hubs:
+    - name: hub-eu
+      endpoint: hub-eu.example.com:51820
+      tunnelIP: 100.64.0.1
+    - name: hub-us
+      endpoint: hub-us.example.com:51820
+      tunnelIP: 100.64.0.2
+
+  # Agents (spokes). Each agent is anchored to a single hub.
+  agents:
+    - name: dev-laptop
+      tunnelIP: 100.64.1.10
+      hub: hub-eu
+      groups: [dev]
+    - name: dev-server
+      tunnelIP: 100.64.1.11
+      hub: hub-eu
+      groups: [dev, infra]
+    - name: prod-server
+      tunnelIP: 100.64.1.20
+      hub: hub-us
+      groups: [prod, infra]
+
+  groups:
+    - dev
+    - prod
+    - infra
+
+  # Default policy is deny. Allow rules are evaluated, then deny rules
+  # override. ACL is enforced on hubs during forwarding.
+  acls:
+    - from: [dev]
+      to: [dev, infra]
+      action: allow
+    - from: [infra]
+      to: [infra]
+      action: allow
+    - from: [prod]
+      to: [infra]
+      action: allow

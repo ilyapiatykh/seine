@@ -1,0 +1,13 @@
+# Tiny git-daemon container that serves the demo's bare repository over
+# the native Git protocol on port 9418. On first start the entrypoint
+# initialises a bare repo from the seed YAML at /seed/network.yaml so
+# the demo is reproducible from scratch.
+FROM alpine:3.20
+
+RUN apk add --no-cache git tini
+
+COPY deploy/docker/scripts/gitserver-entrypoint.sh /usr/local/bin/gitserver-entrypoint.sh
+
+EXPOSE 9418
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/gitserver-entrypoint.sh"]

@@ -1,0 +1,51 @@
+# Demo network spec: cloud + office over a multi-hub overlay.
+#
+# This file is the seed for the gitserver container. The docker-compose
+# stack starts five containers: a control-plane, a git server, two hubs
+# (hub-eu, hub-us) and two spokes (spoke-cloud, spoke-office). Each hub
+# is on its own continent in the topology; the office spoke ends up
+# connecting through the US hub to reach the cloud spoke on the EU hub,
+# exercising the hub-to-hub mesh.
+apiVersion: seine.io/v1
+kind: Network
+metadata:
+  name: corp-overlay
+  description: Demo overlay
+
+spec:
+  cidr: 100.64.0.0/10
+
+  wireguard:
+    mtu: 1420
+    persistentKeepalive: 25s
+    hubListenPort: 51820
+
+  hubs:
+    - name: hub-eu
+      endpoint: hub-eu:51820
+      tunnelIP: 100.64.0.1
+    - name: hub-us
+      endpoint: hub-us:51820
+      tunnelIP: 100.64.0.2
+
+  agents:
+    - name: spoke-cloud
+      tunnelIP: 100.64.1.10
+      hub: hub-eu
+      groups: [cloud]
+    - name: spoke-office
+      tunnelIP: 100.64.2.10
+      hub: hub-us
+      groups: [office]
+
+  groups:
+    - cloud
+    - office
+
+  acls:
+    - from: [cloud]
+      to: [office]
+      action: allow
+    - from: [office]
+      to: [cloud]
+      action: allow

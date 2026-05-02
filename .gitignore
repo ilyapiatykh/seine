@@ -1,0 +1,37 @@
+# Build artifacts
+/bin/
+/dist/
+/build/
+*.exe
+*.test
+*.out
+*.prof
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Local development data
+/tmp/
+/.tmp/
+*.db
+*.db-shm
+*.db-wal
+/var/
+
+# Secrets / local overrides
+*.local.yaml
+*.local.yml
+.env
+.env.*
+!.env.example
+
+# Go
+vendor/
+
+# Generated proto stubs are checked in (Go tradition)
+# /api/proto/**/*.pb.go
+# /api/proto/**/*_grpc.pb.go

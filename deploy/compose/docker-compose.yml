@@ -1,0 +1,189 @@
+# Demo stack for the seine VPN service.
+#
+# Layout:
+#   gitserver    - serves a bare Git repo containing the network spec
+#   seine-server - control-plane: pulls spec, registers agents, returns peers
+#   hub-eu       - hub on the EU side; full-mesh with hub-us
+#   hub-us       - hub on the US side
+#   spoke-cloud  - spoke anchored to hub-eu
+#   spoke-office - spoke anchored to hub-us
+#
+# All agent containers need NET_ADMIN to drive netlink, /dev/net/tun for
+# kernel WireGuard, and net.ipv4.ip_forward=1 (hubs) for forwarding.
+#
+# Bring up:    docker compose -f deploy/compose/docker-compose.yml up --build -d
+# Verify:      docker compose exec spoke-cloud ping -c 3 100.64.2.10
+# Tear down:   docker compose -f deploy/compose/docker-compose.yml down -v
+name: seine-demo
+
+x-agent: &agent-defaults
+  build:
+    context: ../..
+    dockerfile: deploy/docker/Dockerfile
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun:/dev/net/tun
+  restart: unless-stopped
+
+services:
+  gitserver:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gitserver
+    volumes:
+      - ../../examples/demo/network.yaml:/seed/network.yaml:ro
+      - gitserver-data:/srv/repos
+    networks:
+      mgmt: {}
+    healthcheck:
+      test: ["CMD-SHELL", "git ls-remote git://127.0.0.1:9418/seine.git >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  seine-server:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    command: ["seine-server"]
+    environment:
+      SEINE_LOG_LEVEL: info
+      SEINE_LISTEN: ":8443"
+      SEINE_DB: /var/lib/seine/seine.db
+      SEINE_BOOTSTRAP_TOKEN: demo-bootstrap-please-change
+      SEINE_GIT_URL: git://gitserver:9418/seine.git
+      SEINE_GIT_BRANCH: main
+      SEINE_GIT_PATH: network.yaml
+      SEINE_GIT_INTERVAL: 15s
+    volumes:
+      - server-data:/var/lib/seine
+    networks:
+      mgmt: {}
+    depends_on:
+      gitserver:
+        condition: service_healthy
+
+  hub-eu:
+    <<: *agent-defaults
+    command: ["seine-agent"]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    environment:
+      SEINE_LOG_LEVEL: info
+      SEINE_AGENT_NAME: hub-eu
+      SEINE_MODE: hub
+      SEINE_INTERFACE: seine0
+      SEINE_STATE_DIR: /var/lib/seine
+      SEINE_CONTROL_PLANE: seine-server:8443
+      SEINE_BOOTSTRAP_TOKEN: demo-bootstrap-please-change
+      SEINE_ADVERTISE_ENDPOINT: hub-eu:51820
+      SEINE_GIT_URL: git://gitserver:9418/seine.git
+      SEINE_GIT_BRANCH: main
+      SEINE_GIT_PATH: network.yaml
+      SEINE_GIT_INTERVAL: 15s
+      SEINE_RECONCILE_INTERVAL: 10s
+    volumes:
+      - hub-eu-data:/var/lib/seine
+    ports:
+      - "51820:51820/udp"
+    networks:
+      mgmt: {}
+      data: {}
+    depends_on:
+      seine-server:
+        condition: service_started
+
+  hub-us:
+    <<: *agent-defaults
+    command: ["seine-agent"]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    environment:
+      SEINE_LOG_LEVEL: info
+      SEINE_AGENT_NAME: hub-us
+      SEINE_MODE: hub
+      SEINE_INTERFACE: seine0
+      SEINE_STATE_DIR: /var/lib/seine
+      SEINE_CONTROL_PLANE: seine-server:8443
+      SEINE_BOOTSTRAP_TOKEN: demo-bootstrap-please-change
+      SEINE_ADVERTISE_ENDPOINT: hub-us:51820
+      SEINE_GIT_URL: git://gitserver:9418/seine.git
+      SEINE_GIT_BRANCH: main
+      SEINE_GIT_PATH: network.yaml
+      SEINE_GIT_INTERVAL: 15s
+      SEINE_RECONCILE_INTERVAL: 10s
+    volumes:
+      - hub-us-data:/var/lib/seine
+    ports:
+      - "51821:51820/udp"
+    networks:
+      mgmt: {}
+      data: {}
+    depends_on:
+      seine-server:
+        condition: service_started
+
+  spoke-cloud:
+    <<: *agent-defaults
+    command: ["seine-agent"]
+    environment:
+      SEINE_LOG_LEVEL: info
+      SEINE_AGENT_NAME: spoke-cloud
+      SEINE_MODE: spoke
+      SEINE_INTERFACE: seine0
+      SEINE_STATE_DIR: /var/lib/seine
+      SEINE_CONTROL_PLANE: seine-server:8443
+      SEINE_BOOTSTRAP_TOKEN: demo-bootstrap-please-change
+      SEINE_GIT_URL: git://gitserver:9418/seine.git
+      SEINE_GIT_BRANCH: main
+      SEINE_GIT_PATH: network.yaml
+      SEINE_GIT_INTERVAL: 15s
+      SEINE_RECONCILE_INTERVAL: 10s
+    volumes:
+      - spoke-cloud-data:/var/lib/seine
+    networks:
+      mgmt: {}
+      data: {}
+    depends_on:
+      hub-eu:
+        condition: service_started
+
+  spoke-office:
+    <<: *agent-defaults
+    command: ["seine-agent"]
+    environment:
+      SEINE_LOG_LEVEL: info
+      SEINE_AGENT_NAME: spoke-office
+      SEINE_MODE: spoke
+      SEINE_INTERFACE: seine0
+      SEINE_STATE_DIR: /var/lib/seine
+      SEINE_CONTROL_PLANE: seine-server:8443
+      SEINE_BOOTSTRAP_TOKEN: demo-bootstrap-please-change
+      SEINE_GIT_URL: git://gitserver:9418/seine.git
+      SEINE_GIT_BRANCH: main
+      SEINE_GIT_PATH: network.yaml
+      SEINE_GIT_INTERVAL: 15s
+      SEINE_RECONCILE_INTERVAL: 10s
+    volumes:
+      - spoke-office-data:/var/lib/seine
+    networks:
+      mgmt: {}
+      data: {}
+    depends_on:
+      hub-us:
+        condition: service_started
+
+networks:
+  mgmt:
+    driver: bridge
+  data:
+    driver: bridge
+
+volumes:
+  gitserver-data:
+  server-data:
+  hub-eu-data:
+  hub-us-data:
+  spoke-cloud-data:
+  spoke-office-data:
