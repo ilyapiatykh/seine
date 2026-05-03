@@ -15,13 +15,12 @@
 package cpv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -437,7 +436,7 @@ const file_seine_controlplane_v1_controlplane_proto_rawDesc = "" +
 	"ROLE_SPOKE\x10\x022\xcb\x01\n" +
 	"\fControlPlane\x12[\n" +
 	"\bRegister\x12&.seine.controlplane.v1.RegisterRequest\x1a'.seine.controlplane.v1.RegisterResponse\x12^\n" +
-	"\tHeartbeat\x12'.seine.controlplane.v1.HeartbeatRequest\x1a(.seine.controlplane.v1.HeartbeatResponseB<Z:github.com/ilyapiatykh/seine/api/proto/seine/controlplane/v1;cpv1b\x06proto3"
+	"\tHeartbeat\x12'.seine.controlplane.v1.HeartbeatRequest\x1a(.seine.controlplane.v1.HeartbeatResponseBCZAgithub.com/ilyapiatykh/seine/api/proto/seine/controlplane/v1;cpv1b\x06proto3"
 
 var (
 	file_seine_controlplane_v1_controlplane_proto_rawDescOnce sync.Once
