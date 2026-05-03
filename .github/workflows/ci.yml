@@ -87,6 +87,9 @@ jobs:
   image:
     name: Build and Push Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     needs: build
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     steps:
