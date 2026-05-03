@@ -102,7 +102,7 @@ func updateRepo(t *testing.T, dir, body string) {
 func TestWatcher_RunLoadsAndUpdates(t *testing.T) {
 	url, dir := makeRepo(t, exampleSpec)
 	w, err := specsource.New(specsource.Config{
-		Source: gitsource.Config{URL: url, Branch: "master", Path: "network.yaml"},
+		Source:     gitsource.Config{URL: url, Branch: "master", Path: "network.yaml"},
 		Interval:   100 * time.Millisecond,
 		MinBackoff: 50 * time.Millisecond,
 		MaxBackoff: 500 * time.Millisecond,

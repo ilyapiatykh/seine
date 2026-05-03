@@ -59,11 +59,11 @@ func goodSpec(t *testing.T) *spec.Document {
 // fixture wires a Server behind a bufconn listener and returns a connected
 // gRPC client plus a teardown func.
 type fixture struct {
-	t      *testing.T
-	client cpv1.ControlPlaneClient
-	conn   *grpc.ClientConn
-	srv    *grpc.Server
-	store  *store.Store
+	t        *testing.T
+	client   cpv1.ControlPlaneClient
+	conn     *grpc.ClientConn
+	srv      *grpc.Server
+	store    *store.Store
 	provider *stubSpec
 }
 

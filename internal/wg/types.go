@@ -59,12 +59,12 @@ type Status struct {
 
 // PeerStatus is per-peer runtime information.
 type PeerStatus struct {
-	PublicKey         wgtypes.Key
-	Endpoint          *net.UDPAddr
-	AllowedIPs        []netip.Prefix
-	LastHandshake     time.Time
-	BytesReceived     int64
-	BytesTransmitted  int64
+	PublicKey        wgtypes.Key
+	Endpoint         *net.UDPAddr
+	AllowedIPs       []netip.Prefix
+	LastHandshake    time.Time
+	BytesReceived    int64
+	BytesTransmitted int64
 }
 
 // Interface manages a single WireGuard tunnel on the local host.
