@@ -37,8 +37,8 @@ install: ## go install all binaries (uses GOBIN).
 	go install $(GO_BUILD_FLAGS) ./cmd/...
 
 .PHONY: test
-test: ## Run unit tests with race detector.
-	go test $(GO_TEST_FLAGS) ./...
+test: ## Run unit tests with race detector. CGO_ENABLED=1 because of -race flag.
+	CGO_ENABLED=1 go test $(GO_TEST_FLAGS) ./...
 
 .PHONY: vet
 vet: ## go vet.
