@@ -4,9 +4,10 @@
 # the demo is reproducible from scratch.
 FROM alpine:3.20
 
-RUN apk add --no-cache git tini
+RUN apk add --no-cache git git-daemon tini
 
-COPY deploy/docker/scripts/gitserver-entrypoint.sh /usr/local/bin/gitserver-entrypoint.sh
+COPY deployments/docker/scripts/gitserver-entrypoint.sh /usr/local/bin/gitserver-entrypoint.sh
+RUN chmod +x /usr/local/bin/gitserver-entrypoint.sh
 
 EXPOSE 9418
 

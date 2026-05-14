@@ -76,7 +76,7 @@ proto: ## Regenerate gRPC code from .proto files.
 		--go-grpc_out=. --go-grpc_opt=module=$(MODULE) \
 		$(shell find api/proto -name '*.proto')
 
-COMPOSE_FILE := deploy/compose/docker-compose.yml
+COMPOSE_FILE := deployments/compose/docker-compose.yml
 COMPOSE      := docker compose -f $(COMPOSE_FILE)
 
 .PHONY: demo-up

@@ -61,7 +61,7 @@ internal/netpolicy                 hub IP forwarding + ACL via iptables
 internal/agentcore                 agent main loop (register/reconcile)
 internal/otel                      OpenTelemetry providers (OTLP/gRPC)
 internal/logging, internal/buildinfo  small shared utilities
-deploy/                            Dockerfiles + docker-compose demo
+deployments/                       Dockerfiles + docker-compose demo
 examples/                          reference and demo network specs
 ```
 
